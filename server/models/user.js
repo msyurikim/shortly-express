@@ -44,6 +44,17 @@ class Users extends Model {
 
     return super.create.call(this, newUser);
   }
+
+  get(user) {
+    return super.get.call(this, user);
+  }
+
+  // isValidUser(user) {
+  //   let compare = this.get(user);
+  //   return ()
+  // }
+
+
 }
 
 module.exports = new Users();

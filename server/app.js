@@ -15,7 +15,7 @@ app.use(partials());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
-
+// app.use(Auth.createSession);
 
 
 app.get('/',
@@ -80,25 +80,34 @@ app.post('/links',
 /************************************************************/
 
 app.post('/signup', (req, res, next) => {
-  // var user = req.body.username;
-  // var pw = req.body.password;
-  return model.user.create(req.json)
-    .then( () => {
-      return res.sendStatus(201);
-    })
-    .catch( () => {
-      return res.sendStatus(404);
-    });
+  return models.Users.get({'username': req.body.username})
+  .then( data => {
+    if (data) {
+      res.redirect('/signup');
+    } else {
+      return models.Users.create(req.body)
+      .then (() => {
+        res.redirect(303, '/');
+      });
+    }
+  });
 });
 
+app.post('/login', (req, res, next) => {
+  return models.Users.get({'username': req.body.username})
+  .then( data => {
+    if (data) {
+      if (models.Users.compare(req.body.password, data.password, data.salt)) {
+        res.redirect(303, '/');
+      } else {
+        res.redirect(303, '/login');
+      }
+    } else {
+      res.redirect(303, '/login');
+    }
+  });
+});
 
-// app.post('/links',
-//   (req, res, next) => {
-//     var url = req.body.url;
-//     if (!models.Links.isValidUrl(url)) {
-//       // send back a 404 if link is not valid
-//       return res.sendStatus(404);
-//     }
 /************************************************************/
 // Handle the code parameter route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
