@@ -15,20 +15,32 @@ app.use(partials());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
-// app.use(Auth.createSession);
+app.use(require('./middleware/cookieParser'));
+app.use(Auth.createSession);
 
 
-app.get('/',
+
+app.get('/', Auth.verifySession,
   (req, res) => {
     res.render('index');
   });
 
-app.get('/create',
+app.get('/create', Auth.verifySession,
   (req, res) => {
     res.render('index');
   });
 
-app.get('/links',
+app.get('/login',
+  (req, res) => {
+    res.render('login');
+  });
+
+app.get('/signup',
+  (req, res) => {
+    res.render('signup');
+  });
+
+app.get('/links', Auth.verifySession,
   (req, res, next) => {
     models.Links.getAll()
       .then(links => {
@@ -81,31 +93,46 @@ app.post('/links',
 
 app.post('/signup', (req, res, next) => {
   return models.Users.get({'username': req.body.username})
-  .then( data => {
-    if (data) {
-      res.redirect('/signup');
-    } else {
-      return models.Users.create(req.body)
-      .then (() => {
-        res.redirect(303, '/');
-      });
-    }
-  });
+    .then( user => {
+      if (user) {
+        res.redirect('/signup');
+      } else {
+        return models.Users.create({'username': req.body.username, 'password': req.body.password })
+          .then ( results => {
+            return models.Sessions.update({hash: req.session.hash}, {userId: results.insertId});
+          })
+          .then((session) => {
+            res.redirect('/');
+          });
+      }
+    });
 });
 
 app.post('/login', (req, res, next) => {
   return models.Users.get({'username': req.body.username})
-  .then( data => {
-    if (data) {
-      if (models.Users.compare(req.body.password, data.password, data.salt)) {
-        res.redirect(303, '/');
+    .then( user => {
+      if (user) {
+        if (models.Users.compare(req.body.password, user.password, user.salt)) {
+          return models.Sessions.get({userId: user.id})
+            .then( session => {
+              res.redirect('/');
+            });
+        } else {
+          res.redirect('/login');
+        }
       } else {
-        res.redirect(303, '/login');
+        res.redirect('/login');
       }
-    } else {
+    });
+});
+
+
+app.get('/logout', (req, res, next) => {
+  return models.Sessions.delete({hash: req.session.hash})
+    .then(() => {
+      req.cookies = {};
       res.redirect(303, '/login');
-    }
-  });
+    });
 });
 
 /************************************************************/

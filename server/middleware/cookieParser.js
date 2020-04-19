@@ -2,7 +2,7 @@
 const parseCookies = (req, res, next) => {
   var cookieObj = {};
   // console.log(req.headers);
-  if (req.header('Cookie') || req.header('jar')) {
+  if (req.header('Cookie')) {
   // if (req.headers.cookie) {
     // console.log('req.headers.cookie', req.headers.cookie);
     req.headers.cookie.split(';').forEach( (cookie) => {
@@ -15,7 +15,7 @@ const parseCookies = (req, res, next) => {
   }
   req.cookies = cookieObj;
   // console.log('req.cookies', req.cookies);
-  next(req, res);
+  next();
 };
 
 module.exports = parseCookies;
